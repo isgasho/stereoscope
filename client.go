@@ -5,12 +5,14 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/anchore/stereoscope/internal/bus"
 	"github.com/anchore/stereoscope/internal/log"
 	"github.com/anchore/stereoscope/pkg/image"
 	"github.com/anchore/stereoscope/pkg/image/docker"
 	"github.com/anchore/stereoscope/pkg/logger"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/hashicorp/go-multierror"
+	"github.com/wagoodman/go-partybus"
 )
 
 const (
@@ -41,6 +43,8 @@ func (t *tracker) newTempDir() string {
 		panic(err)
 	}
 
+	log.Debugf("created temp directory: %s", dir)
+
 	t.tempDir = append(t.tempDir, dir)
 	return dir
 }
@@ -50,7 +54,10 @@ func (t *tracker) cleanup() error {
 	for _, dir := range t.tempDir {
 		err := os.RemoveAll(dir)
 		if err != nil {
+			log.Errorf("failed to delete temp directory (dir=%s): %w", dir, err)
 			allErrors = multierror.Append(allErrors, err)
+		} else {
+			log.Debugf("deleted temp directory: %s", dir)
 		}
 	}
 	return allErrors
@@ -113,6 +120,10 @@ func GetImage(userStr string, options ...Option) (*image.Image, error) {
 
 func SetLogger(logger logger.Logger) {
 	log.Log = logger
+}
+
+func SetBus(b *partybus.Bus) {
+	bus.SetPublisher(b)
 }
 
 func Cleanup() {

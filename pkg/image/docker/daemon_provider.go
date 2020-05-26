@@ -4,14 +4,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path"
+	"time"
 
+	"github.com/anchore/stereoscope/internal/bus"
 	"github.com/anchore/stereoscope/internal/docker"
 	"github.com/anchore/stereoscope/internal/log"
 	"github.com/anchore/stereoscope/pkg/image"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/wagoodman/go-partybus"
+	"github.com/wagoodman/go-progress"
 )
 
 type DaemonImageProvider struct {
@@ -45,6 +50,29 @@ func (p *DaemonImageProvider) Provide() (*image.Image, error) {
 		return nil, fmt.Errorf("unable to get docker client: %w", err)
 	}
 
+	// fetch the expected image size to estimate and measure progress
+	inspect, _, err := dockerClient.ImageInspectWithRaw(context.Background(), p.ImageRef.Name())
+	if err != nil {
+		return nil, fmt.Errorf("unable to inspect image: %w", err)
+	}
+
+	// docker image save clocks in at ~150MB/sec on my laptop... milage may vary, of course :shrug:
+	mb := math.Pow(2, 20)
+	sec := float64(inspect.VirtualSize) / (mb * 150)
+	approxSaveTime := time.Duration(sec*1000) * time.Millisecond
+
+	dummyProgress := progress.NewTimedProgress(approxSaveTime)
+	copyProgress := progress.NewSizedWriter(inspect.VirtualSize)
+	aggregateProgress := progress.NewAggregateGenerator(dummyProgress, copyProgress)
+	aggregateProgress.SetStrategy(progress.NormalizeStrategy)
+
+	// let consumers know of a monitorable event (image save + copy)
+	bus.Publish(partybus.Event{
+		Type:  "save-image",
+		Value: progress.Progressor(aggregateProgress),
+	})
+
+	// fetch the image from the docker daemon
 	readCloser, err := dockerClient.ImageSave(context.Background(), []string{p.ImageRef.Name()})
 	if err != nil {
 		return nil, fmt.Errorf("unable to save image tar: %w", err)
@@ -56,9 +84,12 @@ func (p *DaemonImageProvider) Provide() (*image.Image, error) {
 		}
 	}()
 
+	// cancel indeterminate progress
+	dummyProgress.SetCompleted()
+
 	// save the image contents to the temp file
 	// note: this is the same image that will be used to querying image content during analysis
-	nBytes, err := io.Copy(tempTarFile, readCloser)
+	nBytes, err := io.Copy(io.MultiWriter(tempTarFile, copyProgress), readCloser)
 	if err != nil {
 		return nil, fmt.Errorf("unable to save image to tar: %w", err)
 	}

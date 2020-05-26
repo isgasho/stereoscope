@@ -18,6 +18,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.5.0 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
+	github.com/wagoodman/go-partybus v0.0.0-20200523153212-65746ab86f7c
+	github.com/wagoodman/go-progress v0.0.0-20200524144804-cf2cae85b749
 	golang.org/x/net v0.0.0-20200501053045-e0ff5e5a1de5 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3 // indirect
@@ -25,3 +27,7 @@ require (
 	google.golang.org/grpc v1.29.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
+
+replace github.com/wagoodman/go-partybus => ../../side-code/go-partybus
+
+replace github.com/wagoodman/go-progress => ../../side-code/go-progress
