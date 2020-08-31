@@ -2,7 +2,9 @@ package image
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/anchore/stereoscope/pkg/file"
 )
@@ -86,13 +88,13 @@ func (c *FileCatalog) buildTarContentsRequests(files ...file.Reference) (map[*La
 
 // MultipleFileContents returns the contents of all provided file references. Returns an error if any of the file
 // references does not exist in the underlying layer tars.
-func (c *FileCatalog) MultipleFileContents(files ...file.Reference) (map[file.Reference]string, error) {
+func (c *FileCatalog) MultipleFileContents(files ...file.Reference) (map[file.Reference]io.Reader, error) {
 	allRequests, err := c.buildTarContentsRequests(files...)
 	if err != nil {
 		return nil, err
 	}
 
-	allResults := make(map[file.Reference]string)
+	allResults := make(map[file.Reference]io.Reader)
 	for layer, request := range allRequests {
 		sourceTarReader, err := layer.content.Uncompressed()
 		if err != nil {
@@ -106,7 +108,7 @@ func (c *FileCatalog) MultipleFileContents(files ...file.Reference) (map[file.Re
 			if _, ok := allResults[fileRef]; ok {
 				return nil, fmt.Errorf("duplicate entries: %+v", fileRef)
 			}
-			allResults[fileRef] = content
+			allResults[fileRef] = strings.NewReader(content)
 		}
 	}
 

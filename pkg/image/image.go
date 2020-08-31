@@ -2,6 +2,7 @@ package image
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/anchore/stereoscope/internal/bus"
 	"github.com/anchore/stereoscope/internal/log"
@@ -159,7 +160,7 @@ func (i *Image) FileContentsFromSquash(path file.Path) (string, error) {
 
 // MultipleFileContentsFromSquash fetches file contents for all given paths, relative to the image squash tree.
 // If any one path does not exist an error is returned for the entire request.
-func (i *Image) MultipleFileContentsFromSquash(paths ...file.Path) (map[file.Reference]string, error) {
+func (i *Image) MultipleFileContentsFromSquash(paths ...file.Path) (map[file.Reference]io.Reader, error) {
 	return fetchMultipleFileContentsByPath(i.SquashedTree(), &i.FileCatalog, paths...)
 }
 
@@ -172,7 +173,7 @@ func (i *Image) FileContentsByRef(ref file.Reference) (string, error) {
 
 // FileContentsByRef fetches file contents for all file references given, irregardless of the source layer.
 // If any one path does not exist an error is returned for the entire request.
-func (i *Image) MultipleFileContentsByRef(refs ...file.Reference) (map[file.Reference]string, error) {
+func (i *Image) MultipleFileContentsByRef(refs ...file.Reference) (map[file.Reference]io.Reader, error) {
 	return i.FileCatalog.MultipleFileContents(refs...)
 }
 

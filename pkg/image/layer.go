@@ -9,6 +9,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/wagoodman/go-partybus"
 	"github.com/wagoodman/go-progress"
+	"io"
 )
 
 // Layer represents a single layer within a container image.
@@ -97,7 +98,7 @@ func (l *Layer) FileContents(path file.Path) (string, error) {
 // MultipleFileContents reads the file contents for all given paths from the underlying layer blob, relative to the layers "diff tree".
 // An error is returned if any one file path does not exist or the read operation cannot continue.
 // This is a convenience function provided by the FileCatalog.
-func (l *Layer) MultipleFileContents(paths ...file.Path) (map[file.Reference]string, error) {
+func (l *Layer) MultipleFileContents(paths ...file.Path) (map[file.Reference]io.Reader, error) {
 	return fetchMultipleFileContentsByPath(l.Tree, l.fileCatalog, paths...)
 }
 
@@ -111,6 +112,6 @@ func (l *Layer) FileContentsFromSquash(path file.Path) (string, error) {
 // MultipleFileContents reads the file contents for all given paths from the underlying layer blob, relative to the layers squashed file tree.
 // An error is returned if any one file path does not exist or the read operation cannot continue.
 // This is a convenience function provided by the FileCatalog.
-func (l *Layer) MultipleFileContentsFromSquash(paths ...file.Path) (map[file.Reference]string, error) {
+func (l *Layer) MultipleFileContentsFromSquash(paths ...file.Path) (map[file.Reference]io.Reader, error) {
 	return fetchMultipleFileContentsByPath(l.SquashedTree, l.fileCatalog, paths...)
 }
