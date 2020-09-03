@@ -24,6 +24,13 @@ func NewFileReference(path Path) Reference {
 	}
 }
 
+func NewFileReferenceWithID(path Path, id uint64) Reference {
+	return Reference{
+		Path: path,
+		id:   ID(id),
+	}
+}
+
 // ID returns the unique ID for this file reference.
 func (f *Reference) ID() ID {
 	return f.id
